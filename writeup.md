@@ -20,7 +20,7 @@ The goals / steps of this project are the following:
 [image5]: ./examples/road-undistorted.png 
 [image6]: ./examples/road-perspective.png  "Road perspective"
 [image7]: ./examples/road-polyfit.png "Fitted curves"
-[image8]: ./examples/road-output.png "Output"
+[image8]: ./examples/road-annotation.png "Output"
 [image9]: ./road-process.png "Complete process"
 [image10]: ./road-annotation.png "Curvature annotation"
 [video1]: ./result.mp4 "Video"
@@ -34,16 +34,45 @@ The goals / steps of this project are the following:
 
 #### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
-Camera matrix and coeficients were calculated using cv2.calibrateCamera(), I used findChessboardCorners and drawChessboardCorners instead of doing it manually like in the course work. Once I got the mtx and dist values I just hardcoded them on my ipython notebook.
+Camera matrix and coeficients were calculated using cv2.calibrateCamera(), I used findChessboardCorners and drawChessboardCorners instead of doing it manually like in the course work. I then used the output objpoints and imgpoints to compute the camera calibration and distortion coefficients using the cv2.calibrateCamera() function. The mtx and dist value are set up by code below:
 
 ```
-MTX = np.array([[  1.15662906e+03,   0.00000000e+00,   6.69041437e+02],
- [  0.00000000e+00,   1.15169194e+03,   3.88137240e+02],
-  [  0.00000000e+00,   0.00000000e+00,   1.00000000e+00]])
-DIST = np.array([[-0.2315715,  -0.12000537, -0.00118338,  0.00023305,  0.15641571]])
+objp = np.zeros((6*9,3), np.float32)
+objp[:,:2] = np.mgrid[0:9, 0:6].T.reshape(-1,2)
+
+# Arrays to store object points and image points from all the images.
+objpoints = [] # 3d points in real world space
+imgpoints = [] # 2d points in image plane.
+
+# Make a list of calibration images
+images = glob.glob('camera_cal/calibration*.jpg')
+
+# Step through the list and search for chessboard corners
+for idx, fname in enumerate(images):
+
+    img = cv2.imread(fname)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Find the chessboard corners
+    ret, corners = cv2.findChessboardCorners(gray, (9,6), None)
+
+    # If found, add object points, image points
+    if ret == True:
+        objpoints.append(objp)
+        imgpoints.append(corners)
+        
+img = cv2.imread('camera_cal/calibration1.jpg')
+img_size = (img.shape[1], img.shape[0])
+
+# Do camera calibration given object points and image points
+ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img_size,None,None)
+dst = cv2.undistort(img, mtx, dist, None, mtx)
+
+MTX = mtx
+DIST = dist
 ```
 
-I then used the output objpoints and imgpoints to compute the camera calibration and distortion coefficients using the cv2.calibrateCamera() function. I applied this distortion correction to the test image using the cv2.undistort() function and obtained this result:
+I applied this distortion correction to the test image using the cv2.undistort() function and obtained this result:
 
 distorted picture:
 
@@ -114,7 +143,7 @@ The way to calculate the curvature radius and the vehicle position is to calcula
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-Here is an example of my result on a test image:
+Here is an example of my result:
 
 ![alt text][image8]
 
